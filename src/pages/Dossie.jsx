@@ -78,27 +78,6 @@ export default function Dossie() {
       {/* Resultados do Dossiê */}
       {dossie && (
         <div className="dossie-results">
-          {/* Banner de Prevenção / Conexão */}
-          {dossie.alertas.length > 0 ? (
-            <div className="alerta-prevencao mb-4">
-              <div className="alerta-header">
-                <AlertTriangle size={20} />
-                <span>Prevenção e Conexão Processual Identificada (arts. 55 e 286 do CPC)</span>
-              </div>
-              <ul className="alerta-lista">
-                {dossie.alertas.map((alt, idx) => (
-                  <li key={idx} className={alt.forte ? 'alerta-grave' : ''} style={{ marginTop: '4px' }}>
-                    • {alt.texto}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div className="box-ok mb-4">
-              <ShieldCheck size={16} /> Nenhuma prevenção ou duplicidade de ações localizada para este registro.
-            </div>
-          )}
-
           {/* Resumo Quantitativo da Parte */}
           <div className="dossie-stats-bar card p-3 mb-4">
             <div className="stat-item">
@@ -122,6 +101,18 @@ export default function Dossie() {
               <strong style={{ color: 'var(--gold)' }}>
                 {Object.keys(dossie.grupos).length}
               </strong>
+            </div>
+            <div className="stat-item">
+              <small className="text-muted">Prevenção / Conexão</small>
+              {dossie.alertas.length > 0 ? (
+                <strong style={{ color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <AlertTriangle size={13} /> {dossie.alertas.length} identificada(s)
+                </strong>
+              ) : (
+                <strong style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <ShieldCheck size={14} /> Regular
+                </strong>
+              )}
             </div>
           </div>
 

@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { Columns3, List, Users, CheckCircle, ArrowRight, ArrowLeft, Shuffle, Sparkles, Filter, Split } from 'lucide-react';
-import { useStore } from '../lib/store';
-import { NumeroProc, PendenciaPill, SlaBadge, Avatar, EquipeTag } from '../components/ui';
-import { STATUS, equipeDoNumero } from '../lib/rules';
-import { fmtDataHora, fmtMoeda } from '../lib/format';
+import { Columns3, List, Users, CheckCircle, ArrowRight, ArrowLeft, Shuffle, Sparkles, Filter, Split, GripVertical, Siren, AlertTriangle } from 'lucide-react';
+import { useStore, useNow } from '../lib/store';
+import { Avatar, estadoSla } from '../components/ui';
+import { STATUS, equipeDoNumero, ultimoDigito } from '../lib/rules';
+import { fmtDataHora, fmtMoeda, fmtRestante } from '../lib/format';
 
 export default function Fila() {
-  const { processos, abrirProcesso, dispatch, analistaPorId, state } = useStore();
+  const { processos, abrirProcesso, dispatch, analistaPorId, state, toast } = useStore();
+  const now = useNow(1000);
   const [visao, setVisao] = useState('kanban'); // 'kanban' | 'split' | 'tabela'
   const [filtroEquipe, setFiltroEquipe] = useState('todas'); // 'todas' | 'par' | 'impar'
+  const [arrastandoId, setArrastandoId] = useState(null);
+  const [colunaHover, setColunaHover] = useState(null);
 
   const processosFiltrados = processos.filter((p) => {
     if (filtroEquipe === 'todas') return true;
@@ -17,6 +20,48 @@ export default function Fila() {
 
   const processosPar = processos.filter((p) => equipeDoNumero(p.numero) === 'par');
   const processosImpar = processos.filter((p) => equipeDoNumero(p.numero) === 'impar');
+
+  const onDragStart = (e, id) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setArrastandoId(id);
+  };
+
+  const onDragEnd = () => {
+    setArrastandoId(null);
+    setColunaHover(null);
+  };
+
+  const onDragOverCol = (e, colId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (colunaHover !== colId) setColunaHover(colId);
+  };
+
+  const onDragLeaveCol = (e, colId) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      if (colunaHover === colId) setColunaHover(null);
+    }
+  };
+
+  const onDropCol = (e, colId) => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain') || arrastandoId;
+    if (id) {
+      const proc = processos.find((p) => p.id === id);
+      if (proc && proc.status !== colId) {
+        dispatch({ type: 'MOVER', id, status: colId });
+        const colAlvo = STATUS.find((s) => s.id === colId);
+        toast({
+          tipo: 'info',
+          titulo: `Processo movido para "${colAlvo?.label}"`,
+          corpo: `${proc.numero}`,
+        });
+      }
+    }
+    setArrastandoId(null);
+    setColunaHover(null);
+  };
 
   return (
     <div className="page-content">
@@ -87,13 +132,21 @@ export default function Fila() {
         </div>
       </div>
 
-      {/* Visão 1: Kanban Tradicional por Fase */}
+      {/* Visão 1: Kanban Tradicional por Fase com Drag & Drop */}
       {visao === 'kanban' && (
         <div className="kanban-board">
           {STATUS.map((coluna) => {
             const itens = processosFiltrados.filter((p) => p.status === coluna.id);
+            const isHover = colunaHover === coluna.id;
+
             return (
-              <div key={coluna.id} className="kanban-col">
+              <div
+                key={coluna.id}
+                className={`kanban-col ${isHover ? 'drag-over' : ''}`}
+                onDragOver={(e) => onDragOverCol(e, coluna.id)}
+                onDragLeave={(e) => onDragLeaveCol(e, coluna.id)}
+                onDrop={(e) => onDropCol(e, coluna.id)}
+              >
                 <div className="kanban-col-header" style={{ borderTopColor: coluna.cor }}>
                   <div className="col-titulo">
                     <strong>{coluna.label}</strong>
@@ -105,71 +158,79 @@ export default function Fila() {
                   {itens.map((p) => {
                     const an = analistaPorId[p.analistaId];
                     const equipe = equipeDoNumero(p.numero);
+                    const dig = ultimoDigito(p.numero);
+                    const slaInfo = p.urgencia ? estadoSla(p.urgencia, now) : null;
+                    const temPendencias = p.pendencias && p.pendencias.length > 0;
+
                     return (
                       <div
                         key={p.id}
-                        className={`kanban-card ${p.urgencia ? 'urgente' : ''}`}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, p.id)}
+                        onDragEnd={onDragEnd}
+                        className={`kanban-card ${arrastandoId === p.id ? 'arrastando' : ''} ${p.urgencia ? 'urgente' : ''}`}
                         onClick={() => abrirProcesso(p.id)}
                       >
-                        <div className="kanban-card-top">
-                          <NumeroProc numero={p.numero} destacar />
-                          <EquipeTag equipe={equipe} />
+                        {/* Linha 1: Número CNJ limpo e Tag Par/Ímpar mini */}
+                        <div className="kc-top">
+                          <span className="kc-numero mono">
+                            {p.numero.slice(0, 6)}<b className={`kc-dig ${equipe}`}>{dig}</b>{p.numero.slice(7)}
+                          </span>
+                          <span className={`kc-tag-equipe ${equipe}`}>
+                            {equipe === 'par' ? 'PAR' : 'ÍMPAR'}
+                          </span>
                         </div>
 
-                        <div className="kanban-card-title">{p.classe}</div>
-                        <div className="kanban-card-sub">{p.assunto}</div>
-
-                        <div className="kanban-card-tags">
-                          {p.urgencia && <SlaBadge u={p.urgencia} />}
-                          <PendenciaPill n={p.pendencias.length} compacto />
+                        {/* Linha 2: Classe e Assunto em tipografia limpa */}
+                        <div className="kc-classe" title={p.classe}>
+                          {p.classe}
+                        </div>
+                        <div className="kc-assunto" title={p.assunto}>
+                          {p.assunto}
                         </div>
 
-                        <div className="kanban-card-footer">
+                        {/* Linha 3: Tags compactas de Urgência e Inconsistências */}
+                        {(slaInfo || temPendencias) && (
+                          <div className="kc-tags-row">
+                            {slaInfo && (
+                              <span className={`kc-sla-pill est-${slaInfo.estado}`} title={`${p.urgencia.label} · Prazo ${p.urgencia.horas}h`}>
+                                <Siren size={11} />
+                                <span>{p.urgencia.label}</span>
+                                <em className="mono">{fmtRestante(slaInfo.restante)}</em>
+                              </span>
+                            )}
+                            {temPendencias && (
+                              <span className="kc-warn-pill" title={`${p.pendencias.length} pendência(s) de cadastro`}>
+                                <AlertTriangle size={11} />
+                                <span>{p.pendencias.length}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Linha 4: Rodapé minimalista com Servidor e Grip de Arrastar */}
+                        <div className="kc-foot">
                           {an ? (
-                            <div className="analista-inline" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Avatar nome={an.nome} cor={an.cor} size={22} />
-                              <span style={{ fontSize: '11.5px', fontWeight: '600' }}>{an.nome.split(' ')[0]}</span>
+                            <div className="kc-analista">
+                              <Avatar nome={an.nome} cor={an.cor} size={20} />
+                              <span>{an.nome.split(' ')[0]}</span>
                             </div>
                           ) : (
-                            <span className="text-muted small">Não atribuído</span>
+                            <span className="kc-sem-analista">Sem servidor</span>
                           )}
 
-                          <div className="kanban-card-actions" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '4px' }}>
-                            {coluna.id !== 'triagem' && (
-                              <button
-                                className="btn-icon-subtle"
-                                title="Voltar etapa"
-                                onClick={() => {
-                                  const idx = STATUS.findIndex((s) => s.id === coluna.id);
-                                  if (idx > 0) {
-                                    dispatch({ type: 'MOVER', id: p.id, status: STATUS[idx - 1].id });
-                                  }
-                                }}
-                              >
-                                <ArrowLeft size={13} />
-                              </button>
-                            )}
-                            {coluna.id !== 'concluido' && (
-                              <button
-                                className="btn-icon-subtle"
-                                title="Avançar etapa"
-                                onClick={() => {
-                                  const idx = STATUS.findIndex((s) => s.id === coluna.id);
-                                  if (idx < STATUS.length - 1) {
-                                    dispatch({ type: 'MOVER', id: p.id, status: STATUS[idx + 1].id });
-                                  }
-                                }}
-                              >
-                                <ArrowRight size={13} />
-                              </button>
-                            )}
+                          <div className="kc-drag-grip" title="Arraste para mover entre etapas">
+                            <GripVertical size={13} />
                           </div>
                         </div>
                       </div>
                     );
                   })}
                   {itens.length === 0 && (
-                    <div className="kanban-empty">Nenhum processo nesta etapa.</div>
+                    <div className="kanban-empty">
+                      <span>Nenhum processo nesta etapa</span>
+                      <small style={{ fontSize: '11px', color: 'var(--text-subtle)' }}>Arraste um processo aqui</small>
+                    </div>
                   )}
                 </div>
               </div>
