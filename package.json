@@ -1,0 +1,26 @@
+{
+  "name": "pje-plus-tjce",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MVP - Suíte de Melhorias Nativas do PJe (TJCE): validação de cadastro, SLA de urgências, fila Par/Ímpar e Dossiê Dona Maria",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:web": "vite",
+    "dev:api": "node --watch server/index.js",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3",
+    "lucide-react": "^1.55.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.5",
+    "vite": "^5.4.21"
+  }
+}
