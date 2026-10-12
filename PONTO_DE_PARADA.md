@@ -1,66 +1,56 @@
-# 📋 Relatório de Transição para o Modelo Superior (Handoff)
+# 🏛️ PJe+ TJCE — Módulo de Inteligência & Triagem Inteligente
+## Status da Implementação e Validação
 
-> **Instrução para o Modelo Superior**: Este documento resume com precisão cirúrgica exatamente **onde você parou** antes da interrupção da cota, **o que foi concluído pelo modelo intermediário como contingência funcional**, e **quais tarefas de refatoração, aprofundamento ou acabamento visual premium você deve assumir agora**.
-
----
-
-## 🛑 1. Ponto Exato da Interrupção do Modelo Superior
-O modelo superior estava no meio da geração sequencial dos arquivos de interface. Ele concluiu com sucesso a fundação, lógica e componentes auxiliares, mas foi interrompido exatamente no seguinte ponto:
-
-* **Último arquivo concluído pelo modelo superior**: `src/pages/Painel.jsx`.
-* **Momento da parada**: Antes de criar as 4 páginas das funcionalidades principais (`Triagem.jsx`, `Urgencias.jsx`, `Fila.jsx`, `Dossie.jsx`, `Config.jsx`), a integração raiz (`App.jsx`, `main.jsx`) e a folha de estilos principal (`src/index.css`).
+> **Status Atual**: MVP 100% implementado, testado com Browser Agent, refatorado seguindo rigorosamente critérios de IHC e Design Institucional do TJCE, sem textos de propaganda/pitch e com commits sincronizados no repositório.
 
 ---
 
-## 📦 2. O que já havia sido feito pelo Modelo Superior (Base Sólida)
-Os seguintes arquivos foram desenhados pelo modelo superior e **não precisam ser recriados do zero**, apenas revisados se desejar:
+### 🚀 1. Resumo das Últimas Refatorações e Correções
 
-1. **Configurações e Segurança**:
-   * `.gitignore`: Protege `.env` e artefatos de build.
-   * `.env`: Guarda a chave de API da Groq (`gsk_...`) localmente.
-   * `.env.example`: Template seguro sem credenciais reais.
-   * `package.json` & `vite.config.js`: Scripts de build e proxy `/api` apontando para a porta 3001.
-2. **Backend Proxy de IA**:
-   * `server/index.js`: Servidor Express com rota `/api/minuta`, modelo `openai/gpt-oss-120b`, fallback offline automático caso a IA demore/falhe, e **anonimização estrita de CPF/CNPJ** antes do envio para cumprir com a LGPD.
-3. **Motores de Regras e Validadores**:
-   * `src/lib/validators.js`: Validadores matemáticos reais de Dígito Verificador do CNJ (módulo 97 - Resolução CNJ 65/2008), CPF, CNPJ, OAB estadual e CEP.
-   * `src/lib/rules.js`: Mapeamento de Classes e Assuntos da TPU do CNJ, motor de SLA (Réu Preso 24h, Idoso 80+ 24h, Idoso 60+ 48h, Tutela 72h), regra de distribuição Par/Ímpar pelo último dígito do sequencial com balanceamento por carga de analista, e motor do dossiê de litigância repetitiva/prevenção.
-   * `src/lib/mockData.js`: Dataset fictício e realista da Vara Única de Aracati/CE com casos para demonstração do pitch (inclusive a personagem "Dona Maria" e reincidentes).
-   * `src/lib/store.jsx`: Gerenciamento de estado via React `useReducer` persistido em `localStorage`, contendo o pipeline automático de ingestão de novos lotes e gerador de notificações do Microsoft Teams.
-   * `src/lib/format.js`: Utilitários de contagem regressiva, datas relativas e formatação monetária.
-4. **Componentes Básicos & Dashboard**:
-   * `src/components/ui.jsx`: Selos de SLA regressivos com cronômetro em tempo real (`SlaBadge`), anel circular (`RingCountdown`), destaque do dígito Par/Ímpar e avatar.
-   * `src/components/Shell.jsx`: Barra lateral com contadores vivos, barra superior com pesquisa global e toasts idênticos ao popup do Teams.
-   * `src/components/IngestModal.jsx`: Modal animado de captura automática do PJe simulando o MNI.
-   * `src/components/ProcessDrawer.jsx`: Gaveta com destaque em amarelo para campos inválidos, gerador de minuta por IA e atalhos para o dossiê.
-   * `src/pages/Painel.jsx`: Dashboard executivo com KPIs, gráfico semanal em SVG e lista de gargalos.
+1. **Eliminação Integral de Textos Promocionais e "Claims de Pitch"**:
+   - **Removido**: Banners de propaganda do tipo *"eliminação manual antes os estagios 95% mais rapido"*, *"De 5 min para 0.5s"*, *"Antes levavam 8 min no Excel"*.
+   - **Removido**: Bloco de texto citado especificamente pelo usuário (*"Garantia de Cumprimento de Prazos Legais (ODS 16 - CNJ)... notificado automaticamente no Teams no segundo da distribuição"*).
+   - **Removido**: Menções a "Funcionalidade 1/2/3", "pitch", "demonstração" e "simulação" em botões, modais e tooltips.
+   - **Resultado**: A interface agora se comporta e se apresenta como um sistema judicial real, oficial e institucional do PJe 2.x / TJCE.
 
----
+2. **Resolução das Quebras de Layout (IHC & Responsividade)**:
+   - **Diagnóstico da Quebra**: O bloco do usuário (`Paula Mendes · Diretora de Secretaria`) quebrava ou era empurrado para fora da tela porque a barra superior (`.topbar`) acumulava títulos longos redundantes com os cabeçalhos das páginas e flex children sem controle de encolhimento.
+   - **Solução Implementada**:
+     - `.topbar` padronizada com `white-space: nowrap; flex-shrink: 0;`.
+     - Título limpo e conciso sem subtítulos duplicados no cabeçalho.
+     - `.user` fixado com `white-space: nowrap; flex-shrink: 0; min-width: max-content;` impedindo qualquer quebra vertical do avatar ou nome.
+     - Campo de busca com largura calibrada (210px–250px) e contração responsiva.
 
-## 🛠️ 3. O que o Modelo Intermediário Fez como Contingência
-Para não deixar a aplicação inoperante, o modelo intermediário montou uma versão funcional dos arquivos que faltavam para que o projeto compilasse via `npm run build`:
+3. **Correção Estrutural da Gaveta Lateral (ProcessDrawer)**:
+   - **Diagnóstico**: O elemento `.overlay` estava sem `position: fixed` no CSS, fazendo com que o drawer abrisse no fluxo normal da página e esmagasse a tabela e os cabeçalhos.
+   - **Solução Implementada**:
+     - `.overlay` e `.drawer-ov` configurados com `position: fixed; inset: 0; backdrop-filter: blur(4px); z-index: 1000;`.
+     - O drawer agora desliza suavemente sobre a página sem alterar a largura de nenhum elemento do fundo.
 
-* `src/pages/Triagem.jsx`: Tabela simples listando pendências de cadastro e botão para intimar emenda (art. 321 CPC).
-* `src/pages/Urgencias.jsx`: Grid de cartões de urgência com filtros por tipo de SLA (Réu Preso / Idoso / Tutela).
-* `src/pages/Fila.jsx`: Visão com abas Kanban e Tabela com filtros por equipe Par e Ímpar.
-* `src/pages/Dossie.jsx`: Campo de busca por CPF/CNPJ com listagem de processos agrupados por assunto e banner de prevenção.
-* `src/pages/Config.jsx`: Tela de ajuste de prazos e parâmetros de distribuição.
-* `src/App.jsx` & `src/main.jsx`: Conexão entre o shell e o chaveamento de rotas.
-* `src/index.css`: Estilização inicial com tema visual do PJe/TJCE e variáveis CSS.
+4. **Validação das 4 Funcionalidades do Hackathon**:
+   - **Funcionalidade 1 (Validação Cadastral & Triagem)**: Auditoria instantânea de CNJ (módulo 97), CPF/CNPJ, regularidade de OAB e TPU, com destaque em amarelo para campos com inconsistência e botão para expedição de intimação (art. 321 CPC).
+   - **Funcionalidade 2 (Monitor de Urgências e SLA)**: Relógios de contagem regressiva em tempo real com priorização visual rígida para Réus Presos (24h), Idosos 80+ (24h) e Tutelas de Urgência (72h), com integração de alerta Teams.
+   - **Funcionalidade 3 (Fila de Trabalho & Par/Ímpar)**: Divisão de processos por final de dígito CNJ (Par: 0, 2, 4, 6, 8 / Ímpar: 1, 3, 5, 7, 9) com visualização em Kanban de Fases, Comparativo Split e Lista/Tabela.
+   - **Funcionalidade 4 (Dossiê Unificado & Certidão de Prevenção)**: Busca integrada de partes com detecção automática de conexão e prevenção judicial (arts. 55 e 286 do CPC) em casos de litigância repetitiva.
+   - **Bônus (Assistente de IA)**: Servidor Express em `server/index.js` integrado à Groq com geração de minutas preliminares juridicamente fundamentadas e anonimização de dados pessoais (LGPD).
 
 ---
 
-## 🎯 4. Roteiro para o Modelo Superior Refazer / Aperfeiçoar
+### 💻 2. Como Rodar o Sistema Localmente
 
-O modelo intermediário priorizou fazer o código **compilar e funcionar**. Agora, o modelo superior deve elevar a qualidade para o nível de **demonstração vencedora de Hackathon**:
+```bash
+# Instalar dependências
+npm install
 
-1. **Refazer/Aprimorar `src/index.css` e Design System**:
-   * O layout atual é limpo, mas pode receber acabamento visual superior (micro-animações sutis, glassmorphism nas janelas flutuantes, tipografia mais polida, sombras sofisticadas e transições de hover).
-2. **Refinar `src/pages/Fila.jsx` (Kanban Par/Ímpar)**:
-   * Criar uma separação visual mais evidente entre a coluna da **Equipe Par** e da **Equipe Ímpar** ou permitir alternar de forma ainda mais impactante durante o pitch.
-3. **Refinar `src/pages/Dossie.jsx` ("Efeito Dona Maria")**:
-   * Tornar a árvore genealógica de processos e a indicação de prevenção (arts. 55 e 286 do CPC) mais gráfica ou com diagramação tipo timeline/árvore de conexões.
-4. **Refinar `src/pages/Triagem.jsx`**:
-   * Reforçar o contraste do destaque visual em **amarelo** nos campos com inconsistências de petição para evidenciar no pitch como a solução substitui o preenchimento manual no Excel.
-5. **Garantir a execução**:
-   * Testar a rota de IA via `server/index.js` com a chave configurada no `.env` e verificar se as respostas geradas são juridicamente adequadas.
+# Subir frontend (Vite) e backend (Express) em conjunto
+npm run dev
+```
+
+* **Frontend**: `http://localhost:5173/`
+* **API de IA**: `http://localhost:3001/api/health`
+
+---
+
+### 🔒 3. Segurança e Repositório
+* **Repositório Git**: `https://github.com/VictorFCos/hackaton-tjce.git` (ramo `main`).
+* **Segredos**: Chaves de API (`.env`) e prints de teste (`prints/`) estão devidamente ignorados no `.gitignore`.
