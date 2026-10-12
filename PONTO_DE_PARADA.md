@@ -7,7 +7,15 @@
 
 ### 🚀 1. Resumo das Últimas Refatorações e Correções
 
-1. **Eliminação Integral de Textos Promocionais e "Claims de Pitch"**:
+1. **Reorganização do Dossiê de Partes segundo Critérios de IHC**:
+   - **Problema Anterior**: A área superior acima de "Empréstimo consignado" acumulava busca, identificação e contadores aglutinados com espaçamento nulo, gerando sobrecarga cognitiva.
+   - **Solução Implementada**:
+     - *Barra de Busca*: Espaçamento interno generoso (`padding: 22px 26px`), bordas suaves e chips de filtro rápido organizados.
+     - *Ficha de Identificação da Parte*: Card dedicado com avatar visual, nome da parte, badge de tipo (PF/PJ), CPF formatado, número de feitos vinculados no TJCE, comarca e indicador discreto de prevenção processual (art. 55 CPC).
+     - *Grade de KPIs Executivos*: 5 cartões métricos individuais com ícones temáticos, valores em destaque e rótulos contextuais ("Total de Processos", "Polo Ativo", "Polo Passivo", "Matérias Distintas", "Prevenção/Conexão").
+     - *Respiro e Divisor de Seção*: Cabeçalho com subtítulo e divisor suave antes da lista de processos por assunto.
+
+2. **Eliminação Integral de Textos Promocionais e "Claims de Pitch"**:
    - **Removido**: Banners de propaganda do tipo *"eliminação manual antes os estagios 95% mais rapido"*, *"De 5 min para 0.5s"*, *"Antes levavam 8 min no Excel"*.
    - **Removido**: Bloco de texto citado especificamente pelo usuário (*"Garantia de Cumprimento de Prazos Legais (ODS 16 - CNJ)... notificado automaticamente no Teams no segundo da distribuição"*).
    - **Removido**: Menções a "Funcionalidade 1/2/3", "pitch", "demonstração" e "simulação" em botões, modais e tooltips.
