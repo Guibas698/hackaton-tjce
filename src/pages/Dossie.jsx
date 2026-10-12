@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { UserSearch, Search, AlertTriangle, ShieldCheck, Building2, User, FileText, ChevronRight, History } from 'lucide-react';
+import { UserSearch, Search, AlertTriangle, ShieldCheck, Building2, User, FileText, ChevronRight, History, ArrowUpRight } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { NumeroProc, SlaBadge } from '../components/ui';
 import { buscarPartes, montarDossie } from '../lib/rules';
@@ -7,49 +7,56 @@ import { fmtMoeda, fmtData } from '../lib/format';
 
 export default function Dossie() {
   const { todos, dossieAlvo, setDossieAlvo, abrirProcesso } = useStore();
-  const [termo, setTermo] = useState(dossieAlvo || '123456789'); // padrão: CPF de Dona Maria
-  const [chaveSelecionada, setChaveSelecionada] = useState(dossieAlvo || '');
-
+  const [termo, setTermo] = useState(dossieAlvo || 'Maria das Graças');
   const sugestoes = termo ? buscarPartes(termo, todos) : [];
+  const [chaveSelecionada, setChaveSelecionada] = useState(dossieAlvo || '');
 
   useEffect(() => {
     if (dossieAlvo) {
       setTermo(dossieAlvo);
       setChaveSelecionada(dossieAlvo);
+    } else if (!chaveSelecionada && sugestoes.length > 0) {
+      setChaveSelecionada(sugestoes[0].chave);
     }
-  }, [dossieAlvo]);
+  }, [dossieAlvo, sugestoes.length]);
 
   const dossie = chaveSelecionada ? montarDossie(chaveSelecionada, todos) : null;
 
   return (
     <div className="page-content">
+      {/* Cabeçalho Limpo */}
       <div className="page-header-row">
         <div>
-          <h2>Dossiê Unificado de Partes ("Efeito Dona Maria")</h2>
+          <h2>Consulta & Dossiê Unificado de Partes</h2>
           <p className="subtext">
-            Raio-X instantâneo por CPF/CNPJ com histórico unificado de ações, prevenção por matéria e litigância repetitiva.
+            Pesquisa integrada por CPF/CNPJ com histórico unificado de feitos e verificação de prevenção (arts. 55 e 286 do CPC).
           </p>
         </div>
       </div>
 
+      {/* Caixa de Busca com Filtros Rápidos */}
       <div className="search-section card p-4 mb-4">
-        <label className="text-muted small mb-2 d-block">Buscar parte por Nome ou CPF/CNPJ:</label>
+        <label className="text-muted small mb-2 d-block" style={{ fontWeight: '600' }}>
+          Consultar por CPF, CNPJ ou Nome da Parte:
+        </label>
         <div className="search-input-group">
-          <Search size={18} />
+          <Search size={17} color="var(--pje-blue)" />
           <input
             type="text"
             className="search-input"
-            placeholder="Ex: Maria das Graças, Banco Horizonte, ou digite o CPF..."
+            placeholder="Digite CPF, CNPJ ou nome da parte..."
             value={termo}
             onChange={(e) => setTermo(e.target.value)}
           />
         </div>
 
         {sugestoes.length > 0 && (
-          <div className="sugestoes-grid mt-3">
-            <span className="small text-muted d-block mb-1">Partes encontradas na base:</span>
+          <div className="mt-3">
+            <span className="small text-muted d-block mb-2" style={{ fontWeight: '600' }}>
+              Partes sugeridas na base:
+            </span>
             <div className="chips-list">
-              {sugestoes.map((s, idx) => (
+              {sugestoes.slice(0, 6).map((s, idx) => (
                 <button
                   key={idx}
                   className={`chip-btn ${chaveSelecionada === s.chave ? 'active' : ''}`}
@@ -60,7 +67,7 @@ export default function Dossie() {
                 >
                   {s.tipo === 'PJ' ? <Building2 size={13} /> : <User size={13} />}
                   <span>{s.nome}</span>
-                  <span className="badge-count">{s.total} ações</span>
+                  <span className="badge-count">{s.total} feitos</span>
                 </button>
               ))}
             </div>
@@ -68,105 +75,133 @@ export default function Dossie() {
         )}
       </div>
 
+      {/* Resultados do Dossiê */}
       {dossie && (
         <div className="dossie-results">
-          {dossie.alertas.length > 0 && (
+          {/* Banner de Prevenção / Conexão */}
+          {dossie.alertas.length > 0 ? (
             <div className="alerta-prevencao mb-4">
               <div className="alerta-header">
                 <AlertTriangle size={20} />
-                <strong>Alerta de Prevenção e Litigância Mapeada (arts. 55 e 286 do CPC)</strong>
+                <span>Prevenção e Conexão Processual Identificada (arts. 55 e 286 do CPC)</span>
               </div>
               <ul className="alerta-lista">
                 {dossie.alertas.map((alt, idx) => (
-                  <li key={idx} className={alt.forte ? 'alerta-grave' : ''}>
-                    {alt.texto}
+                  <li key={idx} className={alt.forte ? 'alerta-grave' : ''} style={{ marginTop: '4px' }}>
+                    • {alt.texto}
                   </li>
                 ))}
               </ul>
             </div>
+          ) : (
+            <div className="box-ok mb-4">
+              <ShieldCheck size={16} /> Nenhuma prevenção ou duplicidade de ações localizada para este registro.
+            </div>
           )}
 
+          {/* Resumo Quantitativo da Parte */}
           <div className="dossie-stats-bar card p-3 mb-4">
             <div className="stat-item">
-              <small className="text-muted">Total de Ações Localizadas</small>
-              <strong>{dossie.lista.length} processos</strong>
+              <small className="text-muted">Total de Processos</small>
+              <strong>{dossie.lista.length}</strong>
             </div>
             <div className="stat-item">
-              <small className="text-muted">Como Autora / Ativa</small>
-              <strong>{dossie.lista.filter((x) => x.papel === 'Autor(a)').length}</strong>
+              <small className="text-muted">Polo Ativo (Autora)</small>
+              <strong style={{ color: 'var(--success)' }}>
+                {dossie.lista.filter((x) => x.papel === 'Autor(a)').length}
+              </strong>
             </div>
             <div className="stat-item">
-              <small className="text-muted">Como Ré / Passiva</small>
-              <strong>{dossie.lista.filter((x) => x.papel !== 'Autor(a)').length}</strong>
+              <small className="text-muted">Polo Passivo (Ré)</small>
+              <strong style={{ color: 'var(--danger)' }}>
+                {dossie.lista.filter((x) => x.papel !== 'Autor(a)').length}
+              </strong>
             </div>
             <div className="stat-item">
-              <small className="text-muted">Assuntos Distintos</small>
-              <strong>{Object.keys(dossie.grupos).length} matérias</strong>
+              <small className="text-muted">Matérias Distintas</small>
+              <strong style={{ color: 'var(--gold)' }}>
+                {Object.keys(dossie.grupos).length}
+              </strong>
             </div>
           </div>
 
+          {/* Processos Agrupados por Matéria */}
           <div className="historico-grupos">
-            {Object.entries(dossie.grupos).map(([assunto, processosDoGrupo]) => (
-              <div key={assunto} className="grupo-card card mb-4">
-                <div className="grupo-header">
-                  <div className="grupo-titulo">
-                    <FileText size={18} />
-                    <strong>Matéria: {assunto}</strong>
-                    <span className="badge-grupo">{processosDoGrupo.length} processo(s)</span>
+            {Object.entries(dossie.grupos).map(([assunto, processosDoGrupo]) => {
+              const temMultiplas = processosDoGrupo.length > 1;
+
+              return (
+                <div key={assunto} className="card mb-4">
+                  <div className="card-h" style={{ background: temMultiplas ? 'rgba(217, 119, 6, 0.06)' : 'var(--bg-card-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FileText size={16} color={temMultiplas ? 'var(--warning)' : 'var(--pje-blue)'} />
+                      <strong style={{ fontSize: '13.5px' }}>{assunto}</strong>
+                      <span className="pill pill-info" style={{ fontSize: '10.5px' }}>
+                        {processosDoGrupo.length} processo(s)
+                      </span>
+                    </div>
+                    {temMultiplas && (
+                      <span className="pill pill-warn" style={{ fontSize: '11px' }}>
+                        Conexão / Repetição
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="table-responsive" style={{ border: 'none', borderRadius: 0 }}>
+                    <table className="pje-table">
+                      <thead>
+                        <tr>
+                          <th>Processo</th>
+                          <th>Posição</th>
+                          <th>Contraparte</th>
+                          <th>Situação</th>
+                          <th>Valor</th>
+                          <th>Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {processosDoGrupo.map((p) => (
+                          <tr key={p.id}>
+                            <td>
+                              <NumeroProc numero={p.numero} destacar />
+                              <div className="text-muted small">{fmtData(p.autuadoEm)}</div>
+                            </td>
+                            <td>
+                              <span className={`badge-papel ${p.papel === 'Autor(a)' ? 'autor' : 'reu'}`}>
+                                {p.papel}
+                              </span>
+                            </td>
+                            <td>
+                              <strong style={{ color: 'var(--text-main)' }}>
+                                {p.papel === 'Autor(a)'
+                                  ? p.poloPassivo.map((x) => x.nome).join(', ')
+                                  : p.poloAtivo.map((x) => x.nome).join(', ')}
+                              </strong>
+                            </td>
+                            <td>
+                              <span className="pill pill-info">
+                                {p.situacao || (p.status === 'concluido' ? 'Arquivado' : 'Em Tramitação')}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: '600' }}>{fmtMoeda(p.valorCausa)}</span>
+                            </td>
+                            <td>
+                              <button
+                                className="btn btn-sm btn-outline"
+                                onClick={() => abrirProcesso(p.id)}
+                              >
+                                Abrir <ArrowUpRight size={12} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                <div className="grupo-tabela-wrap">
-                  <table className="pje-table">
-                    <thead>
-                      <tr>
-                        <th>Processo</th>
-                        <th>Papel</th>
-                        <th>Contraparte</th>
-                        <th>Situação / Fase</th>
-                        <th>Valor da Causa</th>
-                        <th>Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {processosDoGrupo.map((p) => (
-                        <tr key={p.id}>
-                          <td>
-                            <NumeroProc numero={p.numero} destacar />
-                            <div className="text-muted small">{fmtData(p.autuadoEm)}</div>
-                          </td>
-                          <td>
-                            <span className={`badge-papel ${p.papel === 'Autor(a)' ? 'autor' : 'reu'}`}>
-                              {p.papel}
-                            </span>
-                          </td>
-                          <td>
-                            {p.papel === 'Autor(a)'
-                              ? p.poloPassivo.map((x) => x.nome).join(', ')
-                              : p.poloAtivo.map((x) => x.nome).join(', ')}
-                          </td>
-                          <td>
-                            <span className="badge-situacao">
-                              {p.situacao || (p.status === 'concluido' ? 'Arquivado' : 'Em tramitação')}
-                            </span>
-                            {p.resultado && <div className="text-muted small">{p.resultado}</div>}
-                          </td>
-                          <td>{fmtMoeda(p.valorCausa)}</td>
-                          <td>
-                            <button
-                              className="btn btn-sm btn-outline"
-                              onClick={() => abrirProcesso(p.id)}
-                            >
-                              Ver no PJe <ChevronRight size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

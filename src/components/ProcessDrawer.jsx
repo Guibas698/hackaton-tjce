@@ -132,8 +132,8 @@ function AbaDados({ p, an, erroEm }) {
           <div className="bw-h">
             <AlertTriangle size={18} />
             <div>
-              <strong>{p.pendencias.length} pendência(s) de cadastro detectadas automaticamente</strong>
-              <small>Campos destacados em amarelo. Antes, isso era conferido à mão na planilha.</small>
+              <strong>{p.pendencias.length} pendência(s) de cadastro identificadas</strong>
+              <small>Campos com divergência cadastral destacados em amarelo.</small>
             </div>
           </div>
           <ul>
@@ -153,7 +153,7 @@ function AbaDados({ p, an, erroEm }) {
                   id: p.id,
                   notificacao: { id: `e${Date.now()}`, canal: 'email', titulo: `Intimação para emenda · ${p.numero}`, corpo: `Enviada ao(à) ${p.poloAtivo[0]?.advogado?.nome || 'patrono(a)'} via Diário/Domicílio Eletrônico`, processoId: p.id, em: new Date().toISOString(), lida: false },
                 });
-                toast({ tipo: 'email', titulo: 'Intimação para emenda expedida', corpo: 'Advogado notificado (art. 321 do CPC) — simulação' });
+                toast({ tipo: 'email', titulo: 'Intimação para emenda expedida', corpo: 'Advogado notificado via DJe (art. 321 do CPC).' });
               }}
             >
               <Send size={15} /> {p.emendaSolicitada ? 'Emenda já solicitada' : 'Intimar para emenda (art. 321 CPC)'}
@@ -348,9 +348,9 @@ function AbaMinuta({ p, hist }) {
           <Sparkles size={20} />
         </div>
         <div>
-          <strong>Pré-análise com IA generativa</strong>
+          <strong>Minuta Assistida por Inteligência Artificial</strong>
           <small>
-            Lê a petição, as urgências, as pendências e o histórico das partes, e sugere a minuta preliminar. <Lock size={11} /> CPF/CNPJ são removidos antes do envio (LGPD).
+            Sugestão preliminar de despacho fundamentada na petição e autos. <Lock size={11} /> Anonimização LGPD ativa.
           </small>
         </div>
         <button id="btn-gerar-minuta" className="btn btn-ia" onClick={gerar} disabled={carregando}>

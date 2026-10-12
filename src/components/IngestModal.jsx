@@ -92,8 +92,8 @@ export default function IngestModal() {
             <DownloadCloud size={22} />
           </div>
           <div>
-            <h2>Ingestão automática do PJe</h2>
-            <p>{lote?.length} novo(s) processo(s) · sem digitação manual, sem planilha</p>
+            <h2>Captura & Ingestão do PJe</h2>
+            <p>{lote?.length} novo(s) processo(s) distribuídos via integração MNI</p>
           </div>
           {fim && (
             <button className="icon-btn" onClick={fechar} aria-label="Fechar">
@@ -162,7 +162,7 @@ export default function IngestModal() {
               ))}
             </div>
             <footer className="modal-f">
-              <small>Tempo total de triagem: ~{(PASSOS.length * 0.75 + 0.75).toFixed(1)}s · antes: ~{res.resultados.length * 6} min no Excel</small>
+              <small>Processamento e triagem concluídos com sucesso</small>
               <button id="btn-concluir-ingestao" className="btn btn-primary" onClick={fechar}>
                 Concluir
               </button>

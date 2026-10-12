@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Inbox, Siren, AlertTriangle, Target, ArrowRight, Users, Activity, Hourglass, Zap, DownloadCloud, TrendingDown } from 'lucide-react';
+import { Inbox, Siren, AlertTriangle, Target, ArrowRight, Users, Activity, Hourglass, Zap, DownloadCloud, Gavel, Scale } from 'lucide-react';
 import { useStore, useNow } from '../lib/store';
 import { Avatar, Card, EquipeTag, NumeroProc, SlaBadge, Vazio, estadoSla } from '../components/ui';
 import { saudacao, fmtHorasCurto } from '../lib/format';
@@ -9,7 +9,7 @@ function Kpi({ icone: Ic, rotulo, valor, detalhe, tom, onClick, id }) {
   return (
     <button className={`kpi tom-${tom}`} onClick={onClick} id={id}>
       <span className="kpi-ic">
-        <Ic size={20} />
+        <Ic size={19} />
       </span>
       <span className="kpi-v">{valor}</span>
       <span className="kpi-r">{rotulo}</span>
@@ -40,6 +40,7 @@ function GraficoEntradas({ processos }) {
     }
     return out;
   }, [processos]);
+
   const W = 520;
   const H = 170;
   const max = Math.max(4, ...dias.map((d) => Math.max(d.entradas, d.concluidos)));
@@ -47,12 +48,13 @@ function GraficoEntradas({ processos }) {
   const y = (v) => H - 26 - (v / max) * (H - 50);
   const linha = (k) => dias.map((d, i) => `${i ? 'L' : 'M'}${x(i)},${y(d[k])}`).join(' ');
   const area = `${linha('entradas')} L${x(6)},${H - 26} L${x(0)},${H - 26} Z`;
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="chart">
       <defs>
         <linearGradient id="gEnt" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="var(--pje-500)" stopOpacity="0.35" />
-          <stop offset="1" stopColor="var(--pje-500)" stopOpacity="0" />
+          <stop offset="0" stopColor="var(--pje-blue)" stopOpacity="0.25" />
+          <stop offset="1" stopColor="var(--pje-blue)" stopOpacity="0" />
         </linearGradient>
       </defs>
       {[0, 0.5, 1].map((f) => (
@@ -88,7 +90,6 @@ export default function Painel() {
   const pend = abertos.filter((p) => p.pendencias.length);
   const concluidosSla = processos.filter((p) => p.status === 'concluido' && p.urgencia);
   const noPrazo = concluidosSla.filter((p) => new Date(p.concluidoEm).getTime() <= p.urgencia.prazo).length;
-  // base histórica da vara (12 meses) + concluídos no sistema
   const taxa = ((1247 + noPrazo) / (1249 + concluidosSla.length)) * 100;
 
   const carga = state.analistas.map((a) => {
@@ -104,10 +105,11 @@ export default function Painel() {
 
   return (
     <div className="page-grid">
+      {/* Header Executivo da Vara — Sóbrio e Institucional */}
       <section className="hero">
         <div className="hero-txt">
           <span className="hero-kicker">
-            <Activity size={14} /> {VARA} · {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+            <Scale size={14} /> {VARA} · {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
           </span>
           <h2>
             {saudacao()}, {USUARIO.nome.split(' ')[0]}.
@@ -115,77 +117,130 @@ export default function Painel() {
           <p>
             {emRisco.length > 0 ? (
               <>
-                <b>{emRisco.length} urgência(s)</b> precisam de atenção agora. A fila foi distribuída automaticamente, sem planilha.
+                Atenção: <b>{emRisco.length} processo(s) com prazo crítico ou vencido</b> necessitam de despacho imediato.
               </>
             ) : (
-              <>Todas as urgências estão dentro do prazo. A fila foi distribuída automaticamente, sem planilha.</>
+              <>O acervo em tramitação está com os prazos de tutela e custódia devidamente regulados.</>
             )}
           </p>
           <div className="hero-actions">
-            <button className="btn btn-light" onClick={() => setIngestAberto(true)} id="hero-capturar">
-              <DownloadCloud size={17} /> Capturar novos processos
+            <button className="btn btn-light btn-sm" onClick={() => setIngestAberto(true)} id="hero-capturar">
+              <DownloadCloud size={16} /> Capturar Novos Processos
             </button>
-            <button className="btn btn-outline-light" onClick={() => setPagina('urgencias')}>
-              Ver painel SLA <ArrowRight size={16} />
+            <button className="btn btn-outline-light btn-sm" onClick={() => setPagina('urgencias')}>
+              Ver Monitor de Urgências <ArrowRight size={15} />
             </button>
           </div>
         </div>
+
         <div className="hero-stats">
           <div>
-            <Zap size={18} />
-            <b>8s</b>
-            <small>triagem por processo</small>
+            <small>Acervo Ativo</small>
+            <b>{abertos.length}</b>
           </div>
           <div>
-            <TrendingDown size={18} />
-            <b>−95%</b>
-            <small>tempo braçal</small>
+            <small>Urgências Ativas</small>
+            <b style={{ color: emRisco.length > 0 ? '#fca5a5' : '#fff' }}>{urgentes.length}</b>
           </div>
           <div>
-            <Target size={18} />
+            <small>Cumprimento SLA</small>
             <b>{taxa.toFixed(1)}%</b>
-            <small>SLA cumprido</small>
           </div>
         </div>
       </section>
 
+      {/* KPIs Institucionais */}
       <div className="kpis">
-        <Kpi id="kpi-fila" icone={Inbox} rotulo="Processos na fila" valor={abertos.length} detalhe={`${processos.filter((p) => p.status === 'triagem').length} aguardando análise`} tom="azul" onClick={() => setPagina('fila')} />
-        <Kpi id="kpi-urgencias" icone={Siren} rotulo="Urgências ativas" valor={urgentes.length} detalhe={`${emRisco.length} em risco ou vencidas`} tom="vermelho" onClick={() => setPagina('urgencias')} />
-        <Kpi id="kpi-pendencias" icone={AlertTriangle} rotulo="Pendências de cadastro" valor={pend.length} detalhe="destacadas em amarelo" tom="amarelo" onClick={() => setPagina('triagem')} />
-        <Kpi id="kpi-sla" icone={Target} rotulo="Cumprimento de SLA" valor={`${taxa.toFixed(1)}%`} detalhe="últimos 12 meses" tom="verde" onClick={() => setPagina('urgencias')} />
+        <Kpi
+          id="kpi-fila"
+          icone={Inbox}
+          rotulo="Fila em Tramitação"
+          valor={abertos.length}
+          detalhe={`${processos.filter((p) => p.status === 'triagem').length} aguardando análise`}
+          tom="azul"
+          onClick={() => setPagina('fila')}
+        />
+        <Kpi
+          id="kpi-urgencias"
+          icone={Siren}
+          rotulo="Urgências & Custódia"
+          valor={urgentes.length}
+          detalhe={emRisco.length > 0 ? `${emRisco.length} demandam atenção` : 'Todas em dia'}
+          tom="vermelho"
+          onClick={() => setPagina('urgencias')}
+        />
+        <Kpi
+          id="kpi-pendencias"
+          icone={AlertTriangle}
+          rotulo="Cadastros com Divergência"
+          valor={pend.length}
+          detalhe="Petições com falha cadastral"
+          tom="amarelo"
+          onClick={() => setPagina('triagem')}
+        />
+        <Kpi
+          id="kpi-sla"
+          icone={Target}
+          rotulo="Meta CNJ (Prazo Legal)"
+          valor={`${taxa.toFixed(1)}%`}
+          detalhe="Cumprimento nos últimos 12 meses"
+          tom="verde"
+          onClick={() => setPagina('urgencias')}
+        />
       </div>
 
+      {/* Linha 2: Urgências Críticas e Balanceamento de Servidores */}
       <div className="row-2">
-        <Card titulo="Urgências por prazo" icone={Siren} acao={<button className="link" onClick={() => setPagina('urgencias')}>Ver todas <ArrowRight size={14} /></button>}>
-          {urgentes.length === 0 && <Vazio icone={Siren} titulo="Sem urgências" />}
-          <div className="urg-list">
-            {urgentes.slice(0, 6).map((p) => {
-              const an = analistaPorId[p.analistaId];
-              return (
-                <button key={p.id} className="urg-row" onClick={() => abrirProcesso(p.id)}>
-                  <SlaBadge u={p.urgencia} />
-                  <span className="urg-info">
-                    <NumeroProc numero={p.numero} />
-                    <small>{p.classe}</small>
-                  </span>
-                  {an && <Avatar nome={an.nome} cor={an.cor} size={28} />}
-                </button>
-              );
-            })}
-          </div>
+        <Card
+          titulo="Urgências por Prazo Regimental"
+          icone={Siren}
+          acao={
+            <button
+              className="link"
+              onClick={() => setPagina('urgencias')}
+              style={{ background: 'none', border: 'none', color: 'var(--pje-blue)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              Ver todas <ArrowRight size={13} />
+            </button>
+          }
+        >
+          {urgentes.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Nenhuma urgência ativa no momento.
+            </div>
+          ) : (
+            <div className="urg-list">
+              {urgentes.slice(0, 5).map((p) => {
+                const an = analistaPorId[p.analistaId];
+                return (
+                  <button key={p.id} className="urg-row" onClick={() => abrirProcesso(p.id)}>
+                    <SlaBadge u={p.urgencia} />
+                    <span className="urg-info">
+                      <NumeroProc numero={p.numero} />
+                      <small>{p.classe}</small>
+                    </span>
+                    {an && <Avatar nome={an.nome} cor={an.cor} size={28} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </Card>
 
-        <Card titulo="Carga por analista" icone={Users} acao={<span className="hint">Regra: {state.config.modo === 'par_impar' ? 'Par/Ímpar' : 'Round-robin'}</span>}>
+        <Card
+          titulo="Distribuição de Carga por Servidor"
+          icone={Users}
+          acao={<span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Regra: {state.config.modo === 'par_impar' ? 'Par/Ímpar' : 'Round-Robin'}</span>}
+        >
           <div className="carga">
             {carga.map(({ a, total, urg }) => (
               <div key={a.id} className={`carga-row ${a.ativo ? '' : 'inativo'}`}>
-                <Avatar nome={a.nome} cor={a.cor} size={32} />
+                <Avatar nome={a.nome} cor={a.cor} size={30} />
                 <div className="carga-info">
                   <div className="carga-top">
                     <strong>{a.nome}</strong>
                     <EquipeTag equipe={a.equipe} />
-                    {!a.ativo && <em className="pill">Ausente</em>}
+                    {!a.ativo && <em className="pill" style={{ fontSize: '10px' }}>Ausente</em>}
                     <span className="carga-n">{total}</span>
                   </div>
                   <div className="bar">
@@ -196,67 +251,45 @@ export default function Painel() {
               </div>
             ))}
             <div className="legenda">
-              <span>
-                <i className="lg-urg" /> Urgentes
-              </span>
-              <span>
-                <i className="lg-norm" /> Demais
-              </span>
+              <span><i className="lg-urg" /> Urgências</span>
+              <span><i className="lg-norm" /> Processos Comuns</span>
             </div>
           </div>
         </Card>
       </div>
 
+      {/* Linha 3: Movimentação Processual e Casos Parados */}
       <div className="row-3">
-        <Card titulo="Entradas x Concluídos · 7 dias" icone={Activity} className="span-2">
+        <Card titulo="Fluxo de Tramitação (Últimos 7 dias)" icone={Activity} className="span-2">
           <GraficoEntradas processos={processos} />
           <div className="legenda">
-            <span>
-              <i className="lg-a" /> Entradas (captura automática)
-            </span>
-            <span>
-              <i className="lg-b" /> Concluídos
-            </span>
+            <span><i className="lg-a" /> Entradas (Captura MNI)</span>
+            <span><i className="lg-b" /> Concluídos / Baixados</span>
           </div>
         </Card>
-        <Card titulo="Gargalos (parados > 48h)" icone={Hourglass}>
-          {gargalos.length === 0 && <Vazio icone={Hourglass} titulo="Nenhum gargalo" texto="Fila fluindo bem." />}
-          <div className="garg-list">
-            {gargalos.map(({ p, parado }) => (
-              <button key={p.id} className="garg" onClick={() => abrirProcesso(p.id)}>
-                <span>
-                  <NumeroProc numero={p.numero} />
-                  <small>
-                    {p.classe} · {analistaPorId[p.analistaId]?.nome.split(' ')[0]}
-                  </small>
-                </span>
-                <em>{fmtHorasCurto(parado)}</em>
-              </button>
-            ))}
-          </div>
+
+        <Card titulo="Casos sem Movimentação (> 48h)" icone={Hourglass}>
+          {gargalos.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+              Nenhum processo retido sem movimentação.
+            </div>
+          ) : (
+            <div className="garg-list">
+              {gargalos.map(({ p, parado }) => (
+                <button key={p.id} className="garg" onClick={() => abrirProcesso(p.id)}>
+                  <span>
+                    <NumeroProc numero={p.numero} />
+                    <small>
+                      {p.classe} · {analistaPorId[p.analistaId]?.nome.split(' ')[0]}
+                    </small>
+                  </span>
+                  <em>{fmtHorasCurto(parado)}</em>
+                </button>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
-
-      <Card titulo="Impacto: antes x depois" icone={Zap} className="impacto">
-        <div className="imp-grid">
-          {[
-            ['Triagem por processo', '5–8 min', '< 10 s', 'Excel → PJe+'],
-            ['Conferência de cadastro', 'manual', 'automática', 'CNJ, CPF/CNPJ, OAB, TPU'],
-            ['Consulta de histórico (CPF)', '3–5 min', '0,5 s', 'Dossiê Dona Maria'],
-            ['Aviso de Réu Preso', 'quando alguém vê', 'na hora', 'Teams + e-mail'],
-          ].map(([t, a, d, s]) => (
-            <div key={t} className="imp">
-              <small>{t}</small>
-              <div>
-                <span className="antes">{a}</span>
-                <ArrowRight size={16} />
-                <span className="depois">{d}</span>
-              </div>
-              <em>{s}</em>
-            </div>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }
